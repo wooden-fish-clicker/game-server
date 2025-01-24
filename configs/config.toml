@@ -1,0 +1,55 @@
+[App]
+    PrefixUrl = "http://127.0.0.1:8080"
+
+    AppName = "api-gateway"
+
+    LogSavePath = "logs/"
+    LogSaveName = "log"
+    LogFileExt = "log"
+    MaxLogFiles = 5
+
+    ImageStaticPath = "/static/"
+    ImageSavePath = "upload/images/"
+
+[Server]
+    RunMode = "debug" #debug or release
+    HttpPort = 8080
+    ReadTimeout = 60
+    WriteTimeout = 60
+
+
+
+[MySql]
+    ConnString =  "root:root@tcp(127.0.0.1:3306)/"
+    Name = "test"
+
+  [MySql.Base]
+    ConnMaxLifeTime = 60 #分
+    MaxIdleConns = 30
+    MaxOpenConns = 100
+
+
+[MongoDB]
+    ConnString = "mongodb://admin:password@localhost:27017"
+    Name = "test"
+
+[Jwt]
+    Secret = "gin_example"
+    ExpirationDays = 30 # 天
+
+[Redis]
+    Addr = "127.0.0.1:6379"
+    DB = "0"
+    Password = ""
+
+
+[Service]
+    Addr = ":50051"
+
+
+# [mail]
+#   host = "smtp.163.com"
+#   pass = ""
+#   port = 465
+#   to = ""
+#   user = ""

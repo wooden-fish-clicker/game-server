@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option go_package = "/game_server";
+
+package game_server;
+
+
+service GameServerService {
+    rpc Click(ClickRequest) returns (ClickResponse);
+    rpc Attack(AttackRequest) returns (AttackResponse);
+}
+
+
+message ClickRequest {
+    base base = 1;
+}
+
+message AttackRequest {
+    base base = 1;
+    string targetId = 3;
+}
+message ClickResponse {
+    UserInfoData userInfoData = 1;
+}
+
+message AttackResponse {
+    UserInfoData userInfoData = 1;
+    TargetInfoData targetInfoData = 2;
+}
+
+message base {
+    int32 type = 1;
+    string userId = 2;
+}
+
+message UserInfoData {
+    int32 hp = 1;
+    int64 points = 2;
+}
+
+message TargetInfoData {
+    int32 hp = 1;
+    int64 points = 2;
+}
+
+
