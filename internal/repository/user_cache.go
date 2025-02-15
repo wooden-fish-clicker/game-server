@@ -147,23 +147,40 @@ func getAdjustStateLuaScript() string {
 	local now = ARGV[5]
 
 	if consumePoints ~= 0 then
-		redis.call("HINCRBY", userKey, "points", consumePoints)
+		local newPoints = redis.call("HINCRBY", userKey, "points", consumePoints)
+
+		if tonumber(newPoints) < 0 then
+			redis.call("HSET", userKey, "points", 0)
+		end
 	end
 
 	if consumeHp ~= 0 then
-		redis.call("HINCRBY", userKey, "hp", consumeHp)
+		local newHp = redis.call("HINCRBY", userKey, "hp", consumeHp)
+
+		if tonumber(newHp) < 0 then
+			redis.call("HSET", userKey, "hp", 0)
+		end
 	end
 
 	if damagePoint ~= 0 then
-		redis.call("HINCRBY", targetKey, "points", damagePoint)
+		local newTargetPoints = redis.call("HINCRBY", targetKey, "points", damagePoint)
+
+		if tonumber(newTargetPoints) < 0 then
+			redis.call("HSET", targetKey, "points", 0)
+		end
 	end
 
 	if damageHp ~= 0 then
-		redis.call("HINCRBY", targetKey, "hp", damageHp)
+		local newTargetHp = redis.call("HINCRBY", targetKey, "hp", damageHp)
+
+		if tonumber(newTargetHp) < 0 then
+			redis.call("HSET", targetKey, "hp", 0)
+		end
 	end
 
 	redis.call("HSET", userKey, "last_modified", now)
 	redis.call("HSET", targetKey, "last_modified", now)
+
 
 	local newUserState = redis.call("HMGET", userKey, "hp", "points")
 	local newTargetState = redis.call("HMGET", targetKey, "hp", "points")

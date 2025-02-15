@@ -11,7 +11,7 @@ import (
 type clickType int
 
 const (
-	basicClick clickType = 1 // 1
+	basicClick clickType = iota + 1 // 1
 
 )
 
@@ -43,11 +43,6 @@ func (c *ClickService) basicClick(ctx context.Context, userId string) (int32, in
 	if err != nil {
 		return 0, 0, err
 	}
-
-	// hp, points, _, err := c.userCacheRepository.GetUserState(ctx, userId)
-	// if err != nil {
-	// 	return 0, 0, err
-	// }
 
 	return hp, points, nil
 }

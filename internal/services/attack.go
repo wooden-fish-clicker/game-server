@@ -12,8 +12,8 @@ import (
 type attackType int
 
 const (
-	basicAttack attackType = 1 // 1
-
+	basicAttack attackType = iota + 1 // 1
+	strawDoll
 )
 
 type AttackService struct {
@@ -28,20 +28,46 @@ func NewAttackService(userRepository *repository.UserRepository, userCacheReposi
 func (a *AttackService) Attack(ctx context.Context, userId string, targetId string, attackType int) (int32, int64, int32, int64, error) {
 	switch attackType {
 	case int(basicAttack):
-		return a.basicType(ctx, userId, targetId)
+		return a.basicAttack(ctx, userId)
+	case int(strawDoll):
+		return a.strawDollAttack(ctx, userId, targetId)
 	default:
 		return 0, 0, 0, 0, fmt.Errorf("invalid attack type: %d", attackType)
 	}
 
 }
 
-func (a *AttackService) basicType(ctx context.Context, userId string, targetId string) (int32, int64, int32, int64, error) {
+func (a *AttackService) basicAttack(ctx context.Context, userId string) (int32, int64, int32, int64, error) {
+
+	var (
+		consumePoints = -2
+	)
+
+	userHp, userPoints, err := a.getUserState(ctx, userId)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	if err := a.validateUserState(userId, userHp, userPoints, consumePoints); err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	userHp, userPoints, err = a.userCacheRepository.AdjustPoints(ctx, userId, consumePoints)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	return userHp, userPoints, 0, 0, nil
+
+}
+
+func (a *AttackService) strawDollAttack(ctx context.Context, userId string, targetId string) (int32, int64, int32, int64, error) {
 
 	var (
 		consumeHp     = 0
-		ConsumePoints = -2
-		DamageHp      = 0
-		DamagePoint   = -1
+		consumePoints = -4
+		damageHp      = 0
+		damagePoint   = -1
 	)
 	userHp, userPoints, err := a.getUserState(ctx, userId)
 	if err != nil {
@@ -53,24 +79,25 @@ func (a *AttackService) basicType(ctx context.Context, userId string, targetId s
 		return 0, 0, 0, 0, err
 	}
 
-	if userPoints <= int64(ConsumePoints) {
-		return userHp, userPoints, targetHp, targetPoints, fmt.Errorf("user %s points 不足", userId)
+	if err := a.validateUserState(userId, userHp, userPoints, consumePoints); err != nil {
+		return 0, 0, 0, 0, err
 	}
-	if targetHp <= 0 {
-		return userHp, userPoints, targetHp, targetPoints, fmt.Errorf("target %s is dead", targetId)
+
+	if err := a.validateTargetState(targetId, targetHp, targetPoints); err != nil {
+		return 0, 0, 0, 0, err
 	}
 
 	userHp, userPoints, targetHp, targetPoints, err = a.userCacheRepository.AdjustState(ctx, repository.Attack{
 		Type:          int(basicAttack),
 		UserId:        userId,
-		ConsumePoints: ConsumePoints,
+		ConsumePoints: consumePoints,
 		ConsumeHp:     consumeHp,
 		TargetId:      targetId,
-		DamagePoint:   DamagePoint,
-		DamageHp:      DamageHp,
+		DamagePoint:   damagePoint,
+		DamageHp:      damageHp,
 	})
 	if err != nil {
-		return userHp, userPoints, targetHp, targetPoints, err
+		return 0, 0, 0, 0, err
 	}
 
 	return userHp, userPoints, targetHp, targetPoints, nil
@@ -98,4 +125,24 @@ func (a *AttackService) getUserState(ctx context.Context, userId string) (int32,
 	}
 
 	return userHp, userPoints, err
+}
+
+func (a *AttackService) validateUserState(userId string, userHp int32, userPoints int64, consumePoints int) error {
+	if userPoints < int64(-consumePoints) {
+		return fmt.Errorf("user %s points 不足", userId)
+	}
+	if userHp <= 0 {
+		return fmt.Errorf("user %s is dead", userId)
+	}
+	return nil
+}
+
+func (a *AttackService) validateTargetState(targetId string, targetHp int32, targetPoints int64) error {
+	if targetPoints <= 0 { //TODO 目前先不扣到hp , 所以points為0時就不繼續 , 等有重生機制的時候再改
+		return fmt.Errorf("target %s points 不足", targetId)
+	}
+	if targetHp <= 0 {
+		return fmt.Errorf("target %s is dead", targetId)
+	}
+	return nil
 }
